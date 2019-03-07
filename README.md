@@ -3,7 +3,7 @@
   <br>
   <br>
   <a href="https://github.com/bitvavo/go-bitvavo-api.git" alt="Downloads">
-  <img src="https://img.shields.io/github/downloads/bitvavo/go-bitvavo-api/total.svg" /></a>
+  <img src="https://img.shields.io/github/downloads/bitvavo/go-bitvavo-api/total.svg?style=flat-square" /></a>
 </p>
 
 # Go Bitvavo API
