@@ -19,6 +19,8 @@ import (
 )
 
 var baseUrl = "https://api.bitvavo.com/v2"
+var rateLimitRemaining = 1000
+var rateLimitReset = 0
 
 type TimeResponse struct {
   Action   string `json:"action"`
@@ -526,6 +528,7 @@ func (bitvavo Bitvavo) createSignature(timestamp string, method string, url stri
 func (bitvavo Bitvavo) sendPublic(endpoint string) []byte {
   resp, err := http.Get(endpoint)
   if err != nil {
+    fmt.Println("This is the error Joeri " + err.Error())
     errorToConsole("Caught error " + err.Error())
     return []byte("caught error")
   } else {
@@ -535,6 +538,7 @@ func (bitvavo Bitvavo) sendPublic(endpoint string) []byte {
       errorToConsole("Caught error " + err.Error())
       return []byte("caught error")
     }
+    updateRateLimit(resp.Header)
     return body
   }
 }
@@ -571,7 +575,33 @@ func (bitvavo Bitvavo) sendPrivate(endpoint string, postfix string, body map[str
     errorToConsole("Caught error " + err.Error())
     return nil
   }
+  updateRateLimit(resp.Header)
   return respBody
+}
+
+func checkLimit() {
+  now := int(time.Nanosecond * time.Duration(time.Now().UnixNano()) / time.Millisecond)
+  if rateLimitReset <= now {
+    rateLimitRemaining = 1000
+  }
+}
+
+func updateRateLimit(response http.Header) {
+  for key, value := range response {
+    if key == "Bitvavo-Ratelimit-Remaining" {
+      rateLimitRemaining, _ = strconv.Atoi(value[0])
+    }
+    if key == "Bitvavo-Ratelimit-Resetat" {
+      rateLimitReset, _ = strconv.Atoi(value[0])
+      now := int(time.Nanosecond * time.Duration(time.Now().UnixNano()) / time.Millisecond)
+      var timeToWait = rateLimitReset - now
+      time.AfterFunc(time.Duration(timeToWait)*time.Millisecond, checkLimit)
+    }
+  }
+}
+
+func (bitvavo Bitvavo) GetRemainingLimit() int {
+  return rateLimitRemaining
 }
 
 func (bitvavo Bitvavo) createPostfix(options map[string]string) string {
@@ -592,6 +622,13 @@ func handleAPIError(jsonResponse []byte) error {
   if err != nil {
     errorToConsole("error casting")
     return MyError{Err: err}
+  }
+  if e.Code == 105 {
+    rateLimitRemaining = 0
+    rateLimitReset, _ = strconv.Atoi(strings.Split(strings.Split(e.Message, " at ")[1], ".")[0])
+    now := int(time.Nanosecond * time.Duration(time.Now().UnixNano()) / time.Millisecond)
+    var timeToWait = rateLimitReset - now
+    time.AfterFunc(time.Duration(timeToWait)*time.Millisecond, checkLimit)
   }
   return MyError{CustomError: e}
 }
@@ -1053,6 +1090,7 @@ func (bitvavo Bitvavo) handleMessage(ws *Websocket) {
     bitvavo.reconnectTimer = 100
     _, message, err := ws.conn.ReadMessage()
     if handleError(err) {
+      // updateRateLimit(err)
       err = ws.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
       bitvavo.reconnect(ws)
       return
@@ -1061,6 +1099,7 @@ func (bitvavo Bitvavo) handleMessage(ws *Websocket) {
     var x map[string]interface{}
     err = json.Unmarshal(message, &x)
     if handleError(err) {
+      // updateRateLimit(err)
       errorToConsole("We are returning, this should not happen...")
       return
     }

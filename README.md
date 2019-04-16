@@ -52,6 +52,17 @@ cd $GOPATH/src/github.com/bitvavo/go-bitvavo-api/example
 go run main.go
 ```
 
+## Rate Limiting
+
+Bitvavo uses a weight based rate limiting system, with an allowed limit of 1000 per IP or API key each minute. Please inspect each endpoint in the [documentation](https://docs.bitvavo.com/) to see the weight. Failure to respect the rate limit will result in an IP or API key ban.
+Since the remaining limit is returned in the header on each REST request, the remaining limit is tracked locally and can be requested through:
+```
+var limit = bitvavo.GetRemainingLimit()
+fmt.Println("The remaining rate limit is", limit)
+```
+The websocket functions however do not return a remaining limit, therefore the limit is only updated locally once a ban has been issued.
+
+
 ## REST requests
 
 The general convention used in all functions (both REST and websockets), is that all optional parameters are passed as `map[string]string`, while required parameters are passed as separate values. Only when placing orders some of the optional parameters are required, since a limit order requires more information than a market order. The returned responses are all converted to an object, such that `response.<key> = '<value>'`. The definition of the structs is supplied for every function, but the general convention used is that all variables in the struct are defined in UpperCamelCase (PascalCase). On top of the object we also return an error, this error should be checked before handling the response in the following manner:

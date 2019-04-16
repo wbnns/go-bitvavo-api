@@ -1,9 +1,9 @@
 package main
 
 import (
-  "github.com/bitvavo/go-bitvavo-api"
   "encoding/json"
   "fmt"
+  "github.com/bitvavo/go-bitvavo-api"
 )
 
 /*
@@ -34,6 +34,9 @@ func main() {
     ApiSecret:    "<APISECRET>",
     AccessWindow: 10000,
     Debugging:    false}
+
+  var limit = bitvavo.GetRemainingLimit()
+  fmt.Println("The remaining rate limit is", limit)
 
   testREST(bitvavo)
   testWebsocket(bitvavo)
