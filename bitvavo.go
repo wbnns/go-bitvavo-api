@@ -528,7 +528,6 @@ func (bitvavo Bitvavo) createSignature(timestamp string, method string, url stri
 func (bitvavo Bitvavo) sendPublic(endpoint string) []byte {
   resp, err := http.Get(endpoint)
   if err != nil {
-    fmt.Println("This is the error Joeri " + err.Error())
     errorToConsole("Caught error " + err.Error())
     return []byte("caught error")
   } else {
@@ -1090,7 +1089,6 @@ func (bitvavo Bitvavo) handleMessage(ws *Websocket) {
     bitvavo.reconnectTimer = 100
     _, message, err := ws.conn.ReadMessage()
     if handleError(err) {
-      // updateRateLimit(err)
       err = ws.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
       bitvavo.reconnect(ws)
       return
@@ -1099,7 +1097,6 @@ func (bitvavo Bitvavo) handleMessage(ws *Websocket) {
     var x map[string]interface{}
     err = json.Unmarshal(message, &x)
     if handleError(err) {
-      // updateRateLimit(err)
       errorToConsole("We are returning, this should not happen...")
       return
     }
@@ -1638,14 +1635,10 @@ func (ws *Websocket) SubscriptionAccount(market string) (chan SubscriptionAccoun
   if ws.subscriptionAccountOrderChannelMap == nil {
     ws.subscriptionAccountOrderChannelMap = map[string]chan SubscriptionAccountOrder{}
   }
-  // if ws.subscriptionAccountCancelChannelMap == nil {
-  //   ws.subscriptionAccountCancelChannelMap = map[string]chan SubscriptionAccountCancel{}
-  // }
   if ws.subscriptionAccountFillChannelMap == nil {
     ws.subscriptionAccountFillChannelMap = map[string]chan SubscriptionAccountFill{}
   }
   ws.subscriptionAccountOrderChannelMap[market] = make(chan SubscriptionAccountOrder, 100)
-  // ws.subscriptionAccountCancelChannelMap[market] = make(chan SubscriptionAccountCancel, 100)
   ws.subscriptionAccountFillChannelMap[market] = make(chan SubscriptionAccountFill, 100)
 
   if ws.subscriptionAccountOptionsMap == nil {
