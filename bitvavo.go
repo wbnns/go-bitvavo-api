@@ -526,7 +526,23 @@ func (bitvavo Bitvavo) createSignature(timestamp string, method string, url stri
 }
 
 func (bitvavo Bitvavo) sendPublic(endpoint string) []byte {
-  resp, err := http.Get(endpoint)
+  client := &http.Client{}
+  req, err := http.NewRequest("GET", endpoint, bytes.NewBuffer(nil))
+  if err != nil {
+    errorToConsole("We caught error " + err.Error())
+  }
+  if bitvavo.ApiKey != "" {
+    millis := time.Now().UnixNano() / 1000000
+    timeString := strconv.FormatInt(millis, 10)
+    sig := bitvavo.createSignature(timeString, "GET", strings.Replace(endpoint, baseUrl, "", 1), map[string]string{}, bitvavo.ApiSecret)
+    req.Header.Set("Bitvavo-Access-Key", bitvavo.ApiKey)
+    req.Header.Set("Bitvavo-Access-Signature", sig)
+    req.Header.Set("Bitvavo-Access-Timestamp", timeString)
+    req.Header.Set("Bitvavo-Access-Window", strconv.Itoa(bitvavo.AccessWindow))
+  }
+  req.Header.Set("Content-Type", "application/json")
+  resp, err := client.Do(req)
+  // resp, err := http.Get(endpoint)
   if err != nil {
     errorToConsole("Caught error " + err.Error())
     return []byte("caught error")
