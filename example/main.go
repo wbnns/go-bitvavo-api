@@ -262,6 +262,7 @@ func testWebsocket(bitvavo bitvavo.Bitvavo) {
   // withdrawalHistoryChannel := websocket.WithdrawalHistory(map[string]string{})
 
   // subscriptionTickerChannel := websocket.SubscriptionTicker("BTC-EUR")
+  // subscriptionTicker24hChannel := websocket.SubscriptionTicker24h("BTC-EUR")
   // subscriptionAccountOrderChannel, subscriptionAccountFillChannel := websocket.SubscriptionAccount("BTC-EUR")
   // subscriptionCandlesChannel := websocket.SubscriptionCandles("BTC-EUR", "1h")
   // subscriptionTradesChannel := websocket.SubscriptionTrades("BTC-EUR")
@@ -274,62 +275,64 @@ func testWebsocket(bitvavo bitvavo.Bitvavo) {
       fmt.Println("Error received", result)
     case result := <-timeChannel:
       PrettyPrint(result)
-      // case result := <-marketsChannel:
-      //   PrettyPrint(result)
-      // case result := <-assetsChannel:
-      //   PrettyPrint(result)
-      // case result := <-bookChannel:
-      //   PrettyPrint(result)
-      // case result := <-publicTradesChannel:
-      //   PrettyPrint(result)
-      // case result := <-candlesChannel:
-      //   PrettyPrint(result)
-      // case result := <-tickerPriceChannel:
-      //   PrettyPrint(result)
-      // case result := <-tickerBookChannel:
-      //   PrettyPrint(result)
-      // case result := <-ticker24hChannel:
-      //   PrettyPrint(result)
-      // case result := <-placeOrderChannel:
-      //   PrettyPrint(result)
-      // case result := <-getOrderChannel:
-      //   PrettyPrint(result)
-      // case result := <-updateOrderChannel:
-      //   PrettyPrint(result)
-      // case result := <-cancelOrderChannel:
-      //   PrettyPrint(result)
-      // case result := <-getOrdersChannel:
-      //   PrettyPrint(result)
-      // case result := <-cancelOrdersChannel:
-      //   PrettyPrint(result)
-      // case result := <-ordersOpenChannel:
-      //   PrettyPrint(result)
-      // case result := <-tradesChannel:
-      //   PrettyPrint(result)
-      // case result := <-balanceChannel:
-      //   PrettyPrint(result)
-      // case result := <-depositAssetsChannel:
-      //   PrettyPrint(result)
-      // case result := <-withdrawAssetsChannel:
-      //   PrettyPrint(result)
-      // case result := <-depositHistoryChannel:
-      //   PrettyPrint(result)
-      // case result := <-withdrawalHistoryChannel:
-      //   PrettyPrint(result)
-      // case result := <-subscriptionTickerChannel:
-      //   PrettyPrint(result)
-      // case result := <-subscriptionAccountOrderChannel:
-      //   PrettyPrint(result)
-      // case result := <-subscriptionAccountFillChannel:
-      //   PrettyPrint(result)
-      // case result := <-subscriptionCandlesChannel:
-      //   PrettyPrint(result)
-      // case result := <-subscriptionTradesChannel:
-      //   PrettyPrint(result)
-      // case result := <-subscriptionBookUpdateChannel:
-      // PrettyPrint(result)
-      // case result := <-subscriptionBookChannel:
-      //   PrettyPrint(result)
+    // case result := <-marketsChannel:
+    //   PrettyPrint(result)
+    // case result := <-assetsChannel:
+    //   PrettyPrint(result)
+    // case result := <-bookChannel:
+    //   PrettyPrint(result)
+    // case result := <-publicTradesChannel:
+    //   PrettyPrint(result)
+    // case result := <-candlesChannel:
+    //   PrettyPrint(result)
+    // case result := <-tickerPriceChannel:
+    //   PrettyPrint(result)
+    // case result := <-tickerBookChannel:
+    //   PrettyPrint(result)
+    // case result := <-ticker24hChannel:
+    //   PrettyPrint(result)
+    // case result := <-placeOrderChannel:
+    //   PrettyPrint(result)
+    // case result := <-getOrderChannel:
+    //   PrettyPrint(result)
+    // case result := <-updateOrderChannel:
+    //   PrettyPrint(result)
+    // case result := <-cancelOrderChannel:
+    //   PrettyPrint(result)
+    // case result := <-getOrdersChannel:
+    //   PrettyPrint(result)
+    // case result := <-cancelOrdersChannel:
+    //   PrettyPrint(result)
+    // case result := <-ordersOpenChannel:
+    //   PrettyPrint(result)
+    // case result := <-tradesChannel:
+    //   PrettyPrint(result)
+    // case result := <-balanceChannel:
+    //   PrettyPrint(result)
+    // case result := <-depositAssetsChannel:
+    //   PrettyPrint(result)
+    // case result := <-withdrawAssetsChannel:
+    //   PrettyPrint(result)
+    // case result := <-depositHistoryChannel:
+    //   PrettyPrint(result)
+    // case result := <-withdrawalHistoryChannel:
+    //   PrettyPrint(result)
+    // case result := <-subscriptionTickerChannel:
+    //   PrettyPrint(result)
+    // case result := <-subscriptionTicker24hChannel:
+    //     PrettyPrint(result)
+    // case result := <-subscriptionAccountOrderChannel:
+    //   PrettyPrint(result)
+    // case result := <-subscriptionAccountFillChannel:
+    //   PrettyPrint(result)
+    // case result := <-subscriptionCandlesChannel:
+    //   PrettyPrint(result)
+    // case result := <-subscriptionTradesChannel:
+    //   PrettyPrint(result)
+    // case result := <-subscriptionBookUpdateChannel:
+    // PrettyPrint(result)
+    // case result := <-subscriptionBookChannel:
+    //   PrettyPrint(result)
     }
   }
 }

@@ -19,6 +19,7 @@ import (
 )
 
 var baseUrl = "https://api.bitvavo.com/v2"
+var socketBase = "wss://ws.bitvavo.com/v2/"
 var rateLimitRemaining = 1000
 var rateLimitReset = 0
 
@@ -121,6 +122,11 @@ type Ticker24h struct {
   Last        string `json:"last"`
   Volume      string `json:"volume"`
   VolumeQuote string `json:"volumeQuote"`
+  Bid         string `json:"bid"`
+  Ask         string `json:"ask"`
+  Timestamp   int    `json:"timestamp"`
+  BidSize     string `json:"bidSize"`
+  AskSize     string `json:"askSize"`
 }
 
 type TickerPriceResponse struct {
@@ -142,6 +148,8 @@ type TickerBook struct {
   Market string `json:"market"`
   Bid    string `json:"bid"`
   Ask    string `json:"ask"`
+  BidSize string `json:"bidSize"`
+  AskSize string `json:"askSize"`
 }
 
 type PlaceOrderResponse struct {
@@ -227,6 +235,7 @@ type TradesResponse struct {
 }
 
 type Trades struct {
+  Id          string `json:"id"`
   Timestamp   int    `json:"timestamp"`
   Market      string `json:"market"`
   Amount      string `json:"amount"`
@@ -295,10 +304,18 @@ type SubscriptionTickerResponse struct {
 }
 
 type SubscriptionTicker struct {
-  Event   string `json:"event"`
-  Market  string `json:"market"`
-  BestBid string `json:"bestBid"`
-  BestAsk string `json:"bestAsk"`
+  Event       string `json:"event"`
+  Market      string `json:"market"`
+  BestBid     string `json:"bestBid"`
+  BestBidSize string `json:"bestBidSize"`
+  BestAsk     string `json:"bestAsk"`
+  BestAskSize string `json:"bestAskSize"`
+  LastPrice   string `json:"lastPrice"`
+}
+
+type SubscriptionTicker24h struct {
+  Event string      `json:"event"`
+  Data  []Ticker24h `json:"data"`
 }
 
 type SubscriptionAccountFill struct {
@@ -478,6 +495,9 @@ type Websocket struct {
   subscriptionTickerChannelMap map[string]chan SubscriptionTicker
   subscriptionTickerOptionsMap map[string]SubscriptionTickerObject
 
+  subscriptionTicker24hChannelMap map[string]chan Ticker24h
+  subscriptionTicker24hOptionsMap map[string]SubscriptionTickerObject
+
   subscriptionAccountFillChannelMap  map[string]chan SubscriptionAccountFill
   subscriptionAccountOrderChannelMap map[string]chan SubscriptionAccountOrder
   subscriptionAccountOptionsMap      map[string]SubscriptionTickerObject
@@ -542,7 +562,6 @@ func (bitvavo Bitvavo) sendPublic(endpoint string) []byte {
   }
   req.Header.Set("Content-Type", "application/json")
   resp, err := client.Do(req)
-  // resp, err := http.Get(endpoint)
   if err != nil {
     errorToConsole("Caught error " + err.Error())
     return []byte("caught error")
@@ -701,7 +720,7 @@ func (bitvavo Bitvavo) Book(symbol string, options map[string]string) (Book, err
   return t, nil
 }
 
-// options: limit, start, end, tradeId
+// options: limit, start, end, tradeIdFrom, tradeIdTo
 func (bitvavo Bitvavo) PublicTrades(symbol string, options map[string]string) ([]PublicTrades, error) {
   postfix := bitvavo.createPostfix(options)
   jsonResponse := bitvavo.sendPublic(baseUrl + "/" + symbol + "/trades" + postfix)
@@ -855,7 +874,7 @@ func (bitvavo Bitvavo) CancelOrder(market string, orderId string) (CancelOrder, 
   return t, nil
 }
 
-// options: orderId, limit, start, end
+// options: limit, start, end, orderIdFrom, orderIdTo
 func (bitvavo Bitvavo) GetOrders(market string, options map[string]string) ([]Order, error) {
   options["market"] = market
   postfix := bitvavo.createPostfix(options)
@@ -892,7 +911,7 @@ func (bitvavo Bitvavo) OrdersOpen(options map[string]string) ([]Order, error) {
   return t, nil
 }
 
-// options: limit, start, end, tradeId
+// options: limit, start, end, tradeIdFrom, tradeIdTo
 func (bitvavo Bitvavo) Trades(market string, options map[string]string) ([]Trades, error) {
   options["market"] = market
   postfix := bitvavo.createPostfix(options)
@@ -1071,6 +1090,10 @@ func (bitvavo Bitvavo) reconnect(ws *Websocket) {
     myMessage, _ := json.Marshal(ws.subscriptionTickerOptionsMap[market])
     ws.conn.WriteMessage(websocket.TextMessage, []byte(myMessage))
   }
+  for market := range ws.subscriptionTicker24hOptionsMap {
+    myMessage, _ := json.Marshal(ws.subscriptionTicker24hOptionsMap[market])
+    ws.conn.WriteMessage(websocket.TextMessage, []byte(myMessage))
+  }
   for market := range ws.subscriptionAccountOptionsMap {
     myMessage, _ := json.Marshal(ws.subscriptionAccountOptionsMap[market])
     ws.sendPrivate(myMessage)
@@ -1181,6 +1204,15 @@ func (bitvavo Bitvavo) handleMessage(ws *Websocket) {
       }
       market, _ := x["market"].(string)
       ws.subscriptionTickerChannelMap[market] <- t
+    } else if x["event"] == "ticker24h" {
+      var t SubscriptionTicker24h
+      err = json.Unmarshal(message, &t)
+      if handleError(err) {
+        return
+      }
+      for i := 0; i < len(t.Data); i++ {
+        ws.subscriptionTicker24hChannelMap[t.Data[i].Market] <- t.Data[i]
+      }
     } else if x["event"] == "candle" {
       var t PreCandle
       err := json.Unmarshal(message, &t)
@@ -1371,7 +1403,7 @@ func (bitvavo Bitvavo) handleMessage(ws *Websocket) {
 
 func (bitvavo Bitvavo) InitWS() *websocket.Conn {
   bitvavo.reconnectTimer = 100
-  uri, _ := url.Parse("wss://ws.bitvavo.com/v2/")
+  uri, _ := url.Parse(socketBase)
   c, _, err := websocket.DefaultDialer.Dial(uri.String(), nil)
   if err != nil {
     errorToConsole("Caught error " + err.Error())
@@ -1394,7 +1426,7 @@ func (bitvavo Bitvavo) retryReconnect() *websocket.Conn {
   time.Sleep(time.Duration(bitvavo.reconnectTimer) * time.Millisecond)
   bitvavo.reconnectTimer = bitvavo.reconnectTimer * 2
   bitvavo.DebugToConsole("We waited for " + strconv.Itoa(bitvavo.reconnectTimer) + " seconds to reconnect")
-  uri, _ := url.Parse("wss://ws.bitvavo.com/v2/")
+  uri, _ := url.Parse(socketBase)
   c, _, err := websocket.DefaultDialer.Dial(uri.String(), nil)
   if err != nil {
     errorToConsole("Caught error " + err.Error())
@@ -1439,7 +1471,7 @@ func (ws *Websocket) Book(market string, options map[string]string) chan Book {
   return ws.bookChannel
 }
 
-// options: limit, start, end, tradeId
+// options: limit, start, end, tradeIdFrom, tradeIdTo
 func (ws *Websocket) PublicTrades(market string, options map[string]string) chan []PublicTrades {
   ws.publicTradesChannel = make(chan []PublicTrades, 100)
   options["market"] = market
@@ -1546,7 +1578,7 @@ func (ws *Websocket) CancelOrder(market string, orderId string) chan CancelOrder
   return ws.cancelOrderChannel
 }
 
-// options: orderId, limit, start, end
+// options: limit, start, end, orderIdFrom, orderIdTo
 func (ws *Websocket) GetOrders(market string, options map[string]string) chan []Order {
   ws.getOrdersChannel = make(chan []Order, 100)
   options["action"] = "privateGetOrders"
@@ -1573,7 +1605,7 @@ func (ws *Websocket) OrdersOpen(options map[string]string) chan []Order {
   return ws.ordersOpenChannel
 }
 
-// options: limit, start, end, tradeId
+// options: limit, start, end, tradeIdFrom, tradeIdTo
 func (ws *Websocket) Trades(market string, options map[string]string) chan []Trades {
   ws.tradesChannel = make(chan []Trades, 100)
   options["action"] = "privateGetTrades"
@@ -1644,6 +1676,22 @@ func (ws *Websocket) SubscriptionTicker(market string) chan SubscriptionTicker {
   myMessage, _ := json.Marshal(options)
   ws.conn.WriteMessage(websocket.TextMessage, []byte(myMessage))
   return ws.subscriptionTickerChannelMap[market]
+}
+
+func (ws *Websocket) SubscriptionTicker24h(market string) chan Ticker24h {
+  options := SubscriptionTickerObject{Action: "subscribe", Channels: []SubscriptionTickAccSubObject{SubscriptionTickAccSubObject{Name: "ticker24h", Markets: []string{market}}}}
+  if ws.subscriptionTicker24hChannelMap == nil {
+    ws.subscriptionTicker24hChannelMap = map[string]chan Ticker24h{}
+  }
+  if ws.subscriptionTicker24hOptionsMap == nil {
+    ws.subscriptionTicker24hOptionsMap = map[string]SubscriptionTickerObject{}
+  }
+  ws.subscriptionTicker24hChannelMap[market] = make(chan Ticker24h, 100)
+  ws.subscriptionTicker24hOptionsMap[market] = options
+
+  myMessage, _ := json.Marshal(options)
+  ws.conn.WriteMessage(websocket.TextMessage, []byte(myMessage))
+  return ws.subscriptionTicker24hChannelMap[market]
 }
 
 func (ws *Websocket) SubscriptionAccount(market string) (chan SubscriptionAccountOrder, chan SubscriptionAccountFill) {

@@ -1,9 +1,9 @@
 <p align="center">
-  <a href="https://www.bitvavo.com"><img src="https://bitvavo.com/media/images/logo/bitvavoGeneral.svg" width="600" title="Bitvavo Logo"></a>
+  <a href="https://bitvavo.com"><img src="https://bitvavo.com/media/images/logo/bitvavoGeneral.svg" width="600" title="Bitvavo Logo"></a>
 </p>
 
 # Go Bitvavo API
-This is the Go wrapper for the Bitvavo API. This project can be used to build your own projects which interact with the Bitvavo platform. Every function available on the API can be called through a REST request or over websockets. For info on the specifics of every parameter consult the [documentation](https://docs.bitvavo.com/)
+This is the Go wrapper for the Bitvavo API. This project can be used to build your own projects which interact with the Bitvavo platform. Every function available on the API can be called through a REST request or over websockets. For info on the specifics of every parameter consult the [Bitvavo API documentation](https://docs.bitvavo.com/)
 
 * Getting started       [REST](https://github.com/bitvavo/go-bitvavo-api#getting-started) [Websocket](https://github.com/bitvavo/go-bitvavo-api#getting-started-1)
 * General
@@ -33,6 +33,7 @@ This is the Go wrapper for the Bitvavo API. This project can be used to build yo
   * Withdrawal History  [REST](https://github.com/bitvavo/go-bitvavo-api#get-withdrawal-history) [Websocket](https://github.com/bitvavo/go-bitvavo-api#get-withdrawal-history-1)
 * [Subscription](https://github.com/bitvavo/go-bitvavo-api#subscriptions)
   * [Ticker Subscription](https://github.com/bitvavo/go-bitvavo-api#ticker-subscription)
+  * [Ticker 24 Hour Subscription](https://github.com/bitvavo/go-bitvavo-api#ticker-24-hour-subscription)
   * [Account Subscription](https://github.com/bitvavo/go-bitvavo-api#account-subscription)
   * [Candles Subscription](https://github.com/bitvavo/go-bitvavo-api#candles-subscription)
   * [Trades Subscription](https://github.com/bitvavo/go-bitvavo-api#trades-subscription)
@@ -54,7 +55,7 @@ go run main.go
 
 ## Rate Limiting
 
-Bitvavo uses a weight based rate limiting system, with an allowed limit of 1000 per IP or API key each minute. Please inspect each endpoint in the [documentation](https://docs.bitvavo.com/) to see the weight. Failure to respect the rate limit will result in an IP or API key ban.
+Bitvavo uses a weight based rate limiting system, with an allowed limit of 1000 per IP or API key each minute. Please inspect each endpoint in the [Bitvavo API documentation](https://docs.bitvavo.com/) to see the weight. Failure to respect the rate limit will result in an IP or API key ban.
 Since the remaining limit is returned in the header on each REST request, the remaining limit is tracked locally and can be requested through:
 ```
 var limit = bitvavo.GetRemainingLimit()
@@ -382,7 +383,7 @@ type Book struct {
 
 #### Get trades per market
 ```go
-// options: limit, start, end, tradeId
+// options: limit, start, end, tradeIdFrom, tradeIdTo
 response, err := bitvavo.PublicTrades("BTC-EUR", map[string]string{})
 if err != nil {
   fmt.Println(err)
@@ -606,44 +607,46 @@ if err != nil {
 
 ```go
 {
-  "market": "BTC-EUR",
-  "bid": "2991.3",
-  "ask": "2991.7"
-}
-{
-  "market": "ETH-EUR",
-  "bid": "90.422",
-  "ask": "90.56"
-}
-{
-  "market": "OMG-EUR",
-  "bid": "0.9475",
-  "ask": "0.95188"
-}
-{
-  "market": "STORM-EUR",
-  "bid": "0.0023382",
-  "ask": "0.0023647"
-}
-{
-  "market": "TRX-EUR",
-  "bid": "0.024122",
-  "ask": "0.024186"
+  "market": "XVG-BTC",
+  "bid": "0.00000045",
+  "ask": "0.00000046",
+  "bidSize": "28815.01275017",
+  "askSize": "38392.85089495"
 }
 {
   "market": "XVG-EUR",
-  "bid": "0.0051624",
-  "ask": "0.0051785"
+  "bid": "0.004213",
+  "ask": "0.0043174",
+  "bidSize": "1699002.27041019",
+  "askSize": "638327.18139947"
 }
 {
-  "market": "BCH-EUR",
-  "bid": "96.7",
-  "ask": "96.864"
+  "market": "ZIL-BTC",
+  "bid": "0.00000082",
+  "ask": "0.00000083",
+  "bidSize": "140980.13397262",
+  "askSize": "98568.18059098"
 }
 {
-  "market": "DCR-EUR",
-  "bid": "13.995",
-  "ask": "14.086"
+  "market": "ZIL-EUR",
+  "bid": "0.0076771",
+  "ask": "0.0077744",
+  "bidSize": "320216.82744213",
+  "askSize": "157923.96870507"
+}
+{
+  "market": "ZRX-BTC",
+  "bid": "0.00001684",
+  "ask": "0.000016898",
+  "bidSize": "631.2417155",
+  "askSize": "1551.90609202"
+}
+{
+  "market": "ZRX-EUR",
+  "bid": "0.15766",
+  "ask": "0.15826",
+  "bidSize": "873.64460869",
+  "askSize": "1010.23609323"
 }
 ...
 ```
@@ -657,6 +660,8 @@ type TickerBook struct {
   Market string `json:"market"`
   Bid    string `json:"bid"`
   Ask    string `json:"ask"`
+  BidSize string `json:"bidSize"`
+  AskSize string `json:"askSize"`
 }
 ```
 </details>
@@ -678,32 +683,48 @@ if err != nil {
 
 ```go
 {
-  "market": "BTC-EUR",
-  "open": "3002.1",
-  "high": "5000",
-  "low": "2987.4",
-  "last": "2991.1",
-  "volume": "178.93541625",
-  "volumeQuote": "537758.71"
+  "market": "XTZ-EUR",
+  "open": "1.21",
+  "high": "1.2114",
+  "low": "1.0974",
+  "last": "1.1096",
+  "volume": "41994.8008",
+  "volumeQuote": "48041.67",
+  "bid": "1.1088",
+  "ask": "1.1155",
+  "timestamp": 1565775776174,
+  "bidSize": "175.05128",
+  "askSize": "138.519066"
 }
 {
-  "market": "ETH-EUR",
-  "open": "99.699",
-  "high": "99.877",
-  "low": "99.651",
-  "last": "99.877",
-  "volume": "101",
-  "volumeQuote": "10083.89"
+  "market": "XVG-EUR",
+  "open": "0.0043222",
+  "high": "0.0044139",
+  "low": "0.0040849",
+  "last": "0.0041952",
+  "volume": "1237140.82971657",
+  "volumeQuote": "5267.56",
+  "bid": "0.0042134",
+  "ask": "0.0043193",
+  "timestamp": 1565775776103,
+  "bidSize": "1698875.30729496",
+  "askSize": "638047.77525823"
 }
 {
-  "market": "XRP-EUR",
-  "open": "0.25193",
-  "high": "0.25193",
-  "low": "0.25193",
-  "last": "0.25193",
-  "volume": "100",
-  "volumeQuote": "25.19"
+  "market": "ZIL-EUR",
+  "open": "0.0081618",
+  "high": "0.0082359",
+  "low": "0.0076094",
+  "last": "0.0077285",
+  "volume": "774485.99486622",
+  "volumeQuote": "6015.82",
+  "bid": "0.0076778",
+  "ask": "0.0077779",
+  "timestamp": 1565775776160,
+  "bidSize": "320186.06168593",
+  "askSize": "158553.66311916"
 }
+...
 ...
 ```
 </details>
@@ -720,6 +741,11 @@ type Ticker24h struct {
   Last        string `json:"last"`
   Volume      string `json:"volume"`
   VolumeQuote string `json:"volumeQuote"`
+  Bid         string `json:"bid"`
+  Ask         string `json:"ask"`
+  Timestamp   int    `json:"timestamp"`
+  BidSize     string `json:"bidSize"`
+  AskSize     string `json:"askSize"`
 }
 ```
 </details>
@@ -1050,7 +1076,7 @@ type CancelOrder struct {
 Returns the same as get order, but can be used to return multiple orders at once.
 
 ```go
-// options: orderId, limit, start, end
+// options: limit, start, end, orderIdFrom, orderIdTo
 response, err := bitvavo.GetOrders("BTC-EUR", map[string]string{})
 if err != nil {
   fmt.Println(err)
@@ -1349,7 +1375,7 @@ type Fill struct {
 Returns all trades within a market for this account.
 
 ```go
-// options: limit, start, end, tradeId
+// options: limit, start, end, tradeIdFrom, tradeIdTo
 response, err := bitvavo.Trades("BTC-EUR", map[string]string{})
 if err != nil {
   fmt.Println(err)
@@ -1427,6 +1453,7 @@ if err != nil {
 
 ```go
 type Trades struct {
+  Id          string `json:"id"`
   Timestamp   int    `json:"timestamp"`
   Market      string `json:"market"`
   Amount      string `json:"amount"`
@@ -1719,7 +1746,7 @@ type History struct {
 
 ## Websockets
 
-All requests which can be done through REST requests can also be performed over websockets. Bitvavo also provides five [subscriptions](https://github.com/bitvavo/go-bitvavo-api#subscriptions). If subscribed to these, updates specific for that type/market are pushed immediately.
+All requests which can be done through REST requests can also be performed over websockets. Bitvavo also provides six [subscriptions](https://github.com/bitvavo/go-bitvavo-api#subscriptions). If subscribed to these, updates specific for that type/market are pushed immediately.
 
 ### Getting started
 
@@ -2049,7 +2076,7 @@ type Book struct {
 
 #### Get trades per market
 ```go
-// options: limit, start, end, tradeId
+// options: limit, start, end, tradeIdFrom, tradeIdTo
 channel := websocket.PublicTrades("BTC-EUR", map[string]string{})
 
 for {
@@ -2288,44 +2315,46 @@ for {
 
 ```go
 {
-  "market": "BTC-EUR",
-  "bid": "2991.3",
-  "ask": "2991.7"
-}
-{
-  "market": "ETH-EUR",
-  "bid": "90.422",
-  "ask": "90.56"
-}
-{
-  "market": "OMG-EUR",
-  "bid": "0.9475",
-  "ask": "0.95188"
-}
-{
-  "market": "STORM-EUR",
-  "bid": "0.0023382",
-  "ask": "0.0023647"
-}
-{
-  "market": "TRX-EUR",
-  "bid": "0.024122",
-  "ask": "0.024186"
+  "market": "XVG-BTC",
+  "bid": "0.00000045",
+  "ask": "0.00000046",
+  "bidSize": "28815.01275017",
+  "askSize": "38392.85089495"
 }
 {
   "market": "XVG-EUR",
-  "bid": "0.0051624",
-  "ask": "0.0051785"
+  "bid": "0.004213",
+  "ask": "0.0043174",
+  "bidSize": "1699002.27041019",
+  "askSize": "638327.18139947"
 }
 {
-  "market": "BCH-EUR",
-  "bid": "96.7",
-  "ask": "96.864"
+  "market": "ZIL-BTC",
+  "bid": "0.00000082",
+  "ask": "0.00000083",
+  "bidSize": "140980.13397262",
+  "askSize": "98568.18059098"
 }
 {
-  "market": "DCR-EUR",
-  "bid": "13.995",
-  "ask": "14.086"
+  "market": "ZIL-EUR",
+  "bid": "0.0076771",
+  "ask": "0.0077744",
+  "bidSize": "320216.82744213",
+  "askSize": "157923.96870507"
+}
+{
+  "market": "ZRX-BTC",
+  "bid": "0.00001684",
+  "ask": "0.000016898",
+  "bidSize": "631.2417155",
+  "askSize": "1551.90609202"
+}
+{
+  "market": "ZRX-EUR",
+  "bid": "0.15766",
+  "ask": "0.15826",
+  "bidSize": "873.64460869",
+  "askSize": "1010.23609323"
 }
 ...
 ```
@@ -2339,6 +2368,8 @@ type TickerBook struct {
   Market string `json:"market"`
   Bid    string `json:"bid"`
   Ask    string `json:"ask"`
+  BidSize string `json:"bidSize"`
+  AskSize string `json:"askSize"`
 }
 ```
 </details>
@@ -2365,31 +2396,46 @@ for {
 
 ```go
 {
-  "market": "BTC-EUR",
-  "open": "3002.1",
-  "high": "5000",
-  "low": "2987.4",
-  "last": "2991.1",
-  "volume": "178.93541625",
-  "volumeQuote": "537758.71"
+  "market": "XTZ-EUR",
+  "open": "1.21",
+  "high": "1.2114",
+  "low": "1.0974",
+  "last": "1.1096",
+  "volume": "41994.8008",
+  "volumeQuote": "48041.67",
+  "bid": "1.1088",
+  "ask": "1.1155",
+  "timestamp": 1565775776174,
+  "bidSize": "175.05128",
+  "askSize": "138.519066"
 }
 {
-  "market": "ETH-EUR",
-  "open": "99.699",
-  "high": "99.877",
-  "low": "99.651",
-  "last": "99.877",
-  "volume": "101",
-  "volumeQuote": "10083.89"
+  "market": "XVG-EUR",
+  "open": "0.0043222",
+  "high": "0.0044139",
+  "low": "0.0040849",
+  "last": "0.0041952",
+  "volume": "1237140.82971657",
+  "volumeQuote": "5267.56",
+  "bid": "0.0042134",
+  "ask": "0.0043193",
+  "timestamp": 1565775776103,
+  "bidSize": "1698875.30729496",
+  "askSize": "638047.77525823"
 }
 {
-  "market": "XRP-EUR",
-  "open": "0.25193",
-  "high": "0.25193",
-  "low": "0.25193",
-  "last": "0.25193",
-  "volume": "100",
-  "volumeQuote": "25.19"
+  "market": "ZIL-EUR",
+  "open": "0.0081618",
+  "high": "0.0082359",
+  "low": "0.0076094",
+  "last": "0.0077285",
+  "volume": "774485.99486622",
+  "volumeQuote": "6015.82",
+  "bid": "0.0076778",
+  "ask": "0.0077779",
+  "timestamp": 1565775776160,
+  "bidSize": "320186.06168593",
+  "askSize": "158553.66311916"
 }
 ...
 ```
@@ -2407,6 +2453,11 @@ type Ticker24h struct {
   Last        string `json:"last"`
   Volume      string `json:"volume"`
   VolumeQuote string `json:"volumeQuote"`
+  Bid         string `json:"bid"`
+  Ask         string `json:"ask"`
+  Timestamp   int    `json:"timestamp"`
+  BidSize     string `json:"bidSize"`
+  AskSize     string `json:"askSize"`
 }
 ```
 </details>
@@ -2752,7 +2803,7 @@ type CancelOrder struct {
 Returns the same as get order, but can be used to return multiple orders at once.
 
 ```go
-// options: orderId, limit, start, end
+// options: limit, start, end, orderIdFrom, orderIdTo
 channel := websocket.GetOrders("BTC-EUR", map[string]string{})
 
 for {
@@ -3063,7 +3114,7 @@ type Fill struct {
 Returns all trades within a market for this account.
 
 ```go
-// options: limit, start, end, tradeId
+// options: limit, start, end, tradeIdFrom, tradeIdTo
 channel := websocket.Trades("BTC-EUR", map[string]string{})
 
 for {
@@ -3145,6 +3196,7 @@ for {
 
 ```go
 type Trades struct {
+  Id          string `json:"id"`
   Timestamp   int    `json:"timestamp"`
   Market      string `json:"market"`
   Amount      string `json:"amount"`
@@ -3480,9 +3532,11 @@ for {
 {
   "event": "ticker",
   "market": "BTC-EUR",
-  "bestBid": "2995.9",
-  "bestAsk": "2997.7",
-  "lastPrice": "2997.7"
+  "bestBid": "9370.4",
+  "bestBidSize": "0.3080136",
+  "bestAsk": "9369.3",
+  "bestAskSize": "0.10681936",
+  "lastPrice": "9369.3"
 }
 ```
 </details>
@@ -3491,11 +3545,75 @@ for {
 
 ```go
 type SubscriptionTicker struct {
-  Event     string `json:"event"`
-  Market    string `json:"market"`
-  BestBid   string `json:"bestBid"`
-  BestAsk   string `json:"bestAsk"`
-  LastPrice string `json:"lastPrice"`
+  Event       string `json:"event"`
+  Market      string `json:"market"`
+  BestBid     string `json:"bestBid"`
+  BestBidSize string `json:"bestBidSize"`
+  BestAsk     string `json:"bestAsk"`
+  BestAskSize string `json:"bestAskSize"`
+  LastPrice   string `json:"lastPrice"`
+}
+```
+</details>
+
+#### Ticker 24 hour subscription
+Updated ticker24h objects are sent on this channel once per second. A ticker24h object is considered updated if one of the values besides timestamp has changed.
+
+```go
+channel := websocket.SubscriptionTicker24h("BTC-EUR")
+
+for {
+  select {
+  case errorMsg := <-errChannel:
+    fmt.Println("Handle error", errorMsg)
+  case result := <-channel:
+    fmt.Printf("%+v\n", result)
+  } 
+}
+```
+
+<details>
+ <summary>View Response</summary>
+
+```go
+{
+  "market": "BTC-EUR",
+  "open": "10065",
+  "high": "10082",
+  "low": "9265.4",
+  "last": "9371.8",
+  "volume": "308.06115709",
+  "volumeQuote": "2983934.09",
+  "bid": "9365.3",
+  "ask": "9369",
+  "timestamp": 1565776275740,
+  "bidSize": "0.10615797",
+  "askSize": "0.10895214"
+}
+```
+</details>
+<details>
+ <summary>Struct Definition</summary>
+
+```go
+type SubscriptionTicker24h struct {
+  Event string      `json:"event"`
+  Data  []Ticker24h `json:"data"`
+}
+
+type Ticker24h struct {
+  Market      string `json:"market"`
+  Open        string `json:"open"`
+  High        string `json:"high"`
+  Low         string `json:"low"`
+  Last        string `json:"last"`
+  Volume      string `json:"volume"`
+  VolumeQuote string `json:"volumeQuote"`
+  Bid         string `json:"bid"`
+  Ask         string `json:"ask"`
+  Timestamp   int    `json:"timestamp"`
+  BidSize     string `json:"bidSize"`
+  AskSize     string `json:"askSize"`
 }
 ```
 </details>
